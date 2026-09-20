@@ -37,6 +37,9 @@ namespace KHSave.SaveEditor.Services
 
         public string AccountId { get; }
 
+        /// <summary>The editor underneath, which serializes the plain save.</summary>
+        public IWriteToStream Inner => realWriteToStream;
+
         public void WriteToStream(Stream stream)
         {
             using (var plainStream = new MemoryStream())

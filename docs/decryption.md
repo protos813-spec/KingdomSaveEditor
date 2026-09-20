@@ -42,4 +42,14 @@ With a physical Nintendo 3DS, saves are encrypted by default. I recommend to fol
 
 ## PC
 
-You don't need to decrypt saves. For KH HD1.5+2.5 REMIX Steam version (in Windows) the saves can be found in `C:\Users\{$USERNAME}\Documents\My Games\KINGDOM HEARTS HD 1.5+2.5 ReMIX\Steam\{$ID}\` and the save files are .png files.
+In general, you don't need to decrypt saves. For KH HD1.5+2.5 REMIX Steam version (in Windows) the saves can be found in `C:\Users\{$USERNAME}\Documents\My Games\KINGDOM HEARTS HD 1.5+2.5 ReMIX\Steam\{$ID}\` and the save files are .png files.
+
+Kingdom Hearts III (and 0.2) is the exception: the Steam and Epic Games Store releases encrypt their saves with a key derived from the account ID, which is the name of the folder that contains `SaveGames\kh3sv2`. Kingdom Save Editor decrypts those saves when opening them and encrypts them back when saving, so no external tool is needed.
+
+### Moving a Kingdom Hearts III save between a console and PC
+
+Decrypt the console save as described above, open it, then use `File\Convert to Kingdom Hearts III PC save...`. The editor asks which account will load the save and suggests writing `KHIII_slot<n>.bin` straight into that account's `SaveGames\kh3sv2\data` folder.
+
+The game only loads its own save layout, so this works when the console runs the same version as the PC release. A save written by an older version might be rejected as corrupted by the game once encrypted, and the editor warns about it before converting.
+
+For the opposite direction, `File\Export decrypted copy...` writes a PC save without its encryption, in the form the console re-encryption tools expect.

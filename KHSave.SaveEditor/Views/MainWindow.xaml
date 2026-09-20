@@ -10,12 +10,21 @@
         xmlns:kh3="clr-namespace:KHSave.SaveEditor.Kh3;assembly=KHSave.SaveEditor.Kh3"
         xmlns:ext="clr-namespace:Xe.Tools.Wpf.Extensions;assembly=Xe.Tools.Wpf"
         mc:Ignorable="d"
-        Title="{Binding Title}" Height="540" Width="580"
-        Drop="Window_Drop" AllowDrop="True">
+        Title="{Binding Title}"
+        Height="540"
+        Width="580"
+        Drop="Window_Drop"
+        AllowDrop="True">
     <Window.InputBindings>
-        <KeyBinding Key="O" Modifiers="Control" Command="{Binding OpenCommand}"/>
-        <KeyBinding Key="S" Modifiers="Control" Command="{Binding SaveCommand}"/>
-        <KeyBinding Key="S" Modifiers="Control+Shift" Command="{Binding SaveAsCommand}"/>
+        <KeyBinding Key="O"
+                Modifiers="Control"
+                Command="{Binding OpenCommand}"/>
+        <KeyBinding Key="S"
+                Modifiers="Control"
+                Command="{Binding SaveCommand}"/>
+        <KeyBinding Key="S"
+                Modifiers="Control+Shift"
+                Command="{Binding SaveAsCommand}"/>
     </Window.InputBindings>
     <Grid>
         <Grid.RowDefinitions>
@@ -24,36 +33,68 @@
         </Grid.RowDefinitions>
         <Menu Grid.Row="0">
             <MenuItem Header="_File">
-                <MenuItem Header="_Open..." Command="{Binding OpenCommand}">
+                <MenuItem Header="_Open..."
+                        Command="{Binding OpenCommand}">
                     <MenuItem.Icon>
                         <Image Source="{StaticResource FolderOpen_16x}"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="_Attach to PCSX2..." Command="{Binding OpenPcsx2Command}">
+                <MenuItem Header="_Attach to PCSX2..."
+                        Command="{Binding OpenPcsx2Command}">
                 </MenuItem>
-                <MenuItem Header="_Save" Command="{Binding SaveCommand}">
+                <MenuItem Header="_Save"
+                        Command="{Binding SaveCommand}">
                     <MenuItem.Icon>
                         <Image Source="{StaticResource Save_16x}"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Save _as..." Command="{Binding SaveAsCommand}">
+                <MenuItem Header="Save _as..."
+                        Command="{Binding SaveAsCommand}">
+                    <MenuItem.Icon>
+                        <Image Source="{StaticResource SaveAs_16x}"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Save to sl_ot..."
+                        Command="{Binding SaveToSlotCommand}"
+                          ToolTip="Write this save into another slot of the same save file">
                     <MenuItem.Icon>
                         <Image Source="{StaticResource SaveAs_16x}"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <Separator/>
-                <MenuItem Header="Import from different region/edition..." Command="{Binding ImportCommand}">
+                <MenuItem Header="Convert to Kingdom Hearts III _PC save..."
+                        Command="{Binding ExportKh3PcCommand}"
+                          ToolTip="Encrypt a copy of this save for a Steam or Epic Games account">
+                    <MenuItem.Icon>
+                        <Image Source="{StaticResource SaveAs_16x}"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Export _decrypted copy..."
+                        Command="{Binding ExportKh3DecryptedCommand}"
+                          ToolTip="Write a copy of this save without the PC encryption, ready for a console re-encryption tool">
+                    <MenuItem.Icon>
+                        <Image Source="{StaticResource SaveAs_16x}"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="Import from different region/edition..."
+                        Command="{Binding ImportCommand}">
                     <MenuItem.Icon>
                         <Image Source="{StaticResource Import_16x}"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <Separator/>
-                <MenuItem Header="E_xit" Command="{Binding ExitCommand}"/>
+                <MenuItem Header="E_xit"
+                        Command="{Binding ExitCommand}"/>
             </MenuItem>
             <MenuItem Header="_Options">
                 <CheckBox
                     Content="_Advanced mode"
                     IsChecked="{Binding IsAdvancedMode}"/>
+                <CheckBox
+                    Content="_Back up the save file before overwriting"
+                    ToolTip="Keeps a copy next to the save with a timestamp"
+                    IsChecked="{Binding IsBackupOnSaveEnabled}"/>
             </MenuItem>
             <MenuItem Header="_Info">
                 <MenuItem IsEnabled="False">
@@ -68,32 +109,37 @@
                     </MenuItem.Header>
                 </MenuItem>
                 <Separator/>
-                <MenuItem Header="Go to Home Page" Command="{Binding OpenLinkCommand}"
-                    CommandParameter="https://bflorry.github.io/KingdomSaveEditor/">
+                <MenuItem Header="Go to Home Page"
+                        Command="{Binding OpenLinkCommand}"
+                          CommandParameter="https://bflorry.github.io/KingdomSaveEditor/">
                     <MenuItem.Icon>
                         <Image Source="{StaticResource WebURL_16x}"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Get the Source Code" Command="{Binding OpenLinkCommand}"
-                    CommandParameter="https://github.com/BFlorry/KingdomSaveEditor">
+                <MenuItem Header="Get the Source Code"
+                        Command="{Binding OpenLinkCommand}"
+                          CommandParameter="https://github.com/BFlorry/KingdomSaveEditor">
                     <MenuItem.Icon>
                         <Image Source="{StaticResource WebURL_16x}"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Report bug or missing features" Command="{Binding OpenGitHubIssueLinkCommand}"
-                    CommandParameter="https://github.com/BFlorry/KingdomSaveEditor/issues">
+                <MenuItem Header="Report bug or missing features"
+                        Command="{Binding OpenGitHubIssueLinkCommand}"
+                          CommandParameter="https://github.com/BFlorry/KingdomSaveEditor/issues">
                     <MenuItem.Icon>
                         <Image Source="{StaticResource WebURL_16x}"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Join the old read-only xeeynamo's Discord server" Command="{Binding OpenLinkCommand}"
-                    CommandParameter="https://kse-discord.xee.dev">
+                <MenuItem Header="Join the old read-only xeeynamo's Discord server"
+                        Command="{Binding OpenLinkCommand}"
+                          CommandParameter="https://kse-discord.xee.dev">
                     <MenuItem.Icon>
                         <Image Source="{StaticResource WebURL_16x}"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Join BFlorry's Discord server" Command="{Binding OpenLinkCommand}"
-                    CommandParameter="https://discord.gg/PYAcKTT3yw">
+                <MenuItem Header="Join BFlorry's Discord server"
+                        Command="{Binding OpenLinkCommand}"
+                          CommandParameter="https://discord.gg/PYAcKTT3yw">
                     <MenuItem.Icon>
                         <Image Source="{StaticResource WebURL_16x}"/>
                     </MenuItem.Icon>
@@ -101,6 +147,8 @@
             </MenuItem>
         </Menu>
 
-        <Grid x:Name="content" Grid.Row="1" DataContext="{Binding DataContext}"/>
+        <Grid x:Name="content"
+                Grid.Row="1"
+                DataContext="{Binding DataContext}"/>
     </Grid>
 </Window>

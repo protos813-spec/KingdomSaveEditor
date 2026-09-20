@@ -96,6 +96,9 @@ namespace KHSave.SaveEditor.ViewModels
         public RelayCommand OpenPcsx2Command { get; }
         public RelayCommand SaveCommand { get; }
         public RelayCommand SaveAsCommand { get; }
+        public RelayCommand SaveToSlotCommand { get; }
+        public RelayCommand ExportKh3PcCommand { get; }
+        public RelayCommand ExportKh3DecryptedCommand { get; }
         public RelayCommand ImportCommand { get; }
         public RelayCommand ExitCommand { get; }
         public RelayCommand GetLatestVersionCommand { get; }
@@ -117,6 +120,17 @@ namespace KHSave.SaveEditor.ViewModels
         public IOpenStream OpenStream { get; set; }
         public IWriteToStream WriteToStream { get; set; }
         public IGetSave GetSave { get; private set; }
+
+        /// <summary>Keep a timestamped .bak copy of a save file before overwriting it.</summary>
+        public bool IsBackupOnSaveEnabled
+        {
+            get => Global.BackupOnSave;
+            set
+            {
+                Global.BackupOnSave = value;
+                OnPropertyChanged();
+            }
+        }
 
         public bool IsAdvancedMode
         {
@@ -167,8 +181,9 @@ namespace KHSave.SaveEditor.ViewModels
                         }
                         catch
                         {
-                            // Restore back-up before throwing an error
-                            fileDialogManager.Save(stream => backupStream.SetPosition(0).CopyTo(stream));
+                            // Restore the in-memory back-up before throwing
+                            using (var stream = File.Create(fileDialogManager.CurrentFileName))
+                                backupStream.SetPosition(0).CopyTo(stream);
                             throw;
                         }
                     }
@@ -177,6 +192,12 @@ namespace KHSave.SaveEditor.ViewModels
                 x => IsFileOpen || _isProcess);
             SaveAsCommand = new RelayCommand(o => CatchException(() => fileDialogManager.SaveAs(Save)),
                 x => IsFileOpen || _isProcess);
+            SaveToSlotCommand = new RelayCommand(o => CatchException(SaveToSlot),
+                x => CurrentArchiveWriter != null);
+            ExportKh3PcCommand = new RelayCommand(o => CatchException(ExportKh3Pc),
+                x => IsFileOpen && SaveKind == ContentType.KingdomHearts3);
+            ExportKh3DecryptedCommand = new RelayCommand(o => CatchException(ExportKh3Decrypted),
+                x => CurrentKh3PcWriter != null);
             ImportCommand = new RelayCommand(o => CatchException(() =>
             {
                 MessageBox.Show(
@@ -281,6 +302,7 @@ namespace KHSave.SaveEditor.ViewModels
         public bool Open(Stream stream) => CatchException(() =>
         {
             CloseProcessStream();
+            SaveSource.SetFile(stream is FileStream fileStream ? fileStream.Name : null);
 
             try
             {
@@ -299,11 +321,155 @@ namespace KHSave.SaveEditor.ViewModels
             return false;
         });
 
+        /// <summary>Set when the open save came out of a multi-slot save file.</summary>
+        private ArchiveWriteToStream CurrentArchiveWriter => WriteToStream as ArchiveWriteToStream;
+
+        /// <summary>
+        /// Writes the save being edited into another slot of the same save file, picked with the
+        /// same dialog used to choose a slot when opening.
+        /// </summary>
+        private void SaveToSlot()
+        {
+            var writer = CurrentArchiveWriter;
+            if (writer == null)
+                throw new Exception("This save was not opened from a save file with multiple slots.");
+
+            var archive = writer.Archive;
+            IArchiveEntry target = null;
+            var picked = windowManager.Push<ArchiveManagerView>(
+                onSetup: window => window.SetArchive(archive, fileDialogManager.CurrentFileName),
+                onSuccess: window =>
+                {
+                    target = window.SelectedEntry;
+                    return target != null;
+                });
+
+            if (picked != true || target == null)
+                return;
+
+            var index = archive.Entries.IndexOf(target);
+            if (!ReferenceEquals(target, writer.Entry) && !ArchiveSlot.IsEmpty(target))
+            {
+                var answer = MessageBox.Show(
+                    $"Slot {index + 1} already contains \"{target.Name}\", last saved on {target.DateModified}." +
+                    "\n\nOverwriting it cannot be undone. Continue?",
+                    "Save to slot",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning,
+                    MessageBoxResult.No);
+
+                if (answer != MessageBoxResult.Yes)
+                    return;
+            }
+
+            ArchiveSlot.Prepare(archive, target, writer.Entry, index);
+
+            // Point the editor at the chosen slot so this and later saves land there.
+            var previous = WriteToStream;
+            WriteToStream = new ArchiveWriteToStream(writer.Inner, archive, target);
+            try
+            {
+                fileDialogManager.Save(Save);
+            }
+            catch
+            {
+                WriteToStream = previous;
+                throw;
+            }
+        }
+
         private void Save(Stream stream)
         {
             Buffered(stream, WriteToStream.WriteToStream);
             OnPropertyChanged(nameof(Title));
         }
+
+        /// <summary>Set when the open save came out of an encrypted KH3 PC save file.</summary>
+        private Kh3PcEncryptedWriteToStream CurrentKh3PcWriter => WriteToStream as Kh3PcEncryptedWriteToStream;
+
+        /// <summary>
+        /// Writes the save as a separate encrypted KH3 PC save
+        /// </summary>
+        private void ExportKh3Pc()
+        {
+            if (!(GetSave?.GetSave() is ISaveKh3 save))
+                throw new Exception("Only a Kingdom Hearts III save can be converted to the PC format.");
+
+            var plainStream = new MemoryStream();
+            Kh3PlainWriter.WriteToStream(plainStream);
+
+            if (!(save is SaveKh3PC))
+            {
+                if (!SaveKh3PcCrypto.CanEncrypt(plainStream.Length))
+                    throw new Exception(
+                        $"This save has the layout of Kingdom Hearts III version {save.MajorVersion}.{save.MinorVersion}, " +
+                        "which cannot be stored in the PC save container. Only a save written by a game version that " +
+                        "matches the PC release can be converted.");
+
+                if (!ConfirmForeignSaveLayout(save))
+                    return;
+            }
+
+            var accountId = AskKh3AccountId();
+            if (accountId == null)
+                return;
+
+            var fileName = SaveKh3PcCrypto.SuggestPcFileName(fileDialogManager.CurrentFileName);
+            var folder = SaveKh3PcCrypto.TryGetSaveFolder(accountId);
+            if (folder != null)
+                fileName = Path.Combine(folder, fileName);
+
+            fileDialogManager.ExportAs(fileName, "Kingdom Hearts III PC save", "bin",
+                stream => SaveKh3PcCrypto.Encrypt(plainStream, stream, accountId));
+        }
+
+        /// <summary>
+        /// Writes the save without the PC encryption, which is the form the console decryption tools expect.
+        /// </summary>
+        private void ExportKh3Decrypted()
+        {
+            var writer = CurrentKh3PcWriter;
+            if (writer == null)
+                throw new Exception("This save was not opened from an encrypted Kingdom Hearts III PC save.");
+
+            var current = fileDialogManager.CurrentFileName ?? "KHIII_slot0.bin";
+            var name = Path.Combine(
+                Path.GetDirectoryName(current) ?? string.Empty,
+                $"{Path.GetFileNameWithoutExtension(current)}_decrypted.bin");
+
+            fileDialogManager.ExportAs(name, "Decrypted Kingdom Hearts III save", "bin",
+                stream => Buffered(stream, writer.Inner.WriteToStream));
+        }
+
+        /// <summary>The KH3 editor itself, with the PC encryption wrapper taken off.</summary>
+        private IWriteToStream Kh3PlainWriter => CurrentKh3PcWriter?.Inner ?? WriteToStream;
+
+        private string AskKh3AccountId()
+        {
+            string accountId = null;
+            var result = windowManager.Push<Kh3AccountIdWindow>(
+                onSetup: window => window.AskForEncryption(
+                    SaveKh3PcCrypto.TryGetAccountIdFromPath(fileDialogManager.CurrentFileName)),
+                onSuccess: window =>
+                {
+                    accountId = window.AccountId;
+                    return true;
+                });
+
+            return result == true ? accountId : null;
+        }
+
+        /// <summary>
+        /// Version mismatch warning prompt. Might be a nothingburger coz the game will probably upgrade the save as needed.
+        /// </summary>
+        private static bool ConfirmForeignSaveLayout(ISaveKh3 save) =>
+            MessageBox.Show(
+                $"This save was written by Kingdom Hearts III version {save.MajorVersion}.{save.MinorVersion}, while the PC release writes a newer layout. Whether the game upgrades an older save when loading it is untested.\n\n" +
+                "The conversion writes a new file and leaves this save untouched, so it is safe to try. Convert?",
+                "Save version mismatch",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning,
+                MessageBoxResult.Yes) == MessageBoxResult.Yes;
 
         public bool TryOpen(Stream stream) =>
             TryOpenKh1(stream) ||
@@ -343,6 +509,7 @@ namespace KHSave.SaveEditor.ViewModels
         {
             bool result;
 
+            SaveSource.SetArchiveEntry(archive.Name, archiveEntry.Name);
             using (var stream = new MemoryStream(archiveEntry.Data))
                 result = TryOpen(stream);
 
@@ -493,6 +660,9 @@ namespace KHSave.SaveEditor.ViewModels
 
                 OnPropertyChanged(nameof(SaveCommand));
                 OnPropertyChanged(nameof(SaveAsCommand));
+                OnPropertyChanged(nameof(SaveToSlotCommand));
+                OnPropertyChanged(nameof(ExportKh3PcCommand));
+                OnPropertyChanged(nameof(ExportKh3DecryptedCommand));
                 OnPropertyChanged(nameof(ImportCommand));
                 OnControlChanged?.Invoke(contentResponse.Control);
             }

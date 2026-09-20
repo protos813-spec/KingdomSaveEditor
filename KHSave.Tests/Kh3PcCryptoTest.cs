@@ -26,7 +26,6 @@ namespace KHSave.Tests
 {
     public class Kh3PcCryptoTest
     {
-        // Steam save from a bug report (SteamID64 76561198125911929): level 1, 64 munny.
         private const string Slot0Path = "Saves/kh3_steam_slot0.bin";
         private const string Slot1Path = "Saves/kh3_steam_slot1.bin";
         private const string SystemPath = "Saves/kh3_steam_system.bin";
@@ -51,6 +50,39 @@ namespace KHSave.Tests
         [InlineData("Saves/kh3.bin", null)]
         public void AccountIdFromPathTest(string path, string expected) =>
             Assert.Equal(expected, SaveKh3PcCrypto.TryGetAccountIdFromPath(path));
+
+        [Theory]
+        [InlineData("__data__slot0.bin", "KHIII_slot0.bin")]
+        [InlineData("__data__slot1.bin", "KHIII_slot1.bin")]
+        [InlineData(@"C:\Downloads\PS4 save\__data__slot2.bin", "KHIII_slot2.bin")]
+        [InlineData("KHIII_system.bin", "KHIII_system.bin")]
+        [InlineData("kh3.bin", "KHIII_slot0.bin")]
+        [InlineData(null, "KHIII_slot0.bin")]
+        public void SuggestPcFileNameTest(string sourceFileName, string expected) =>
+            Assert.Equal(expected, SaveKh3PcCrypto.SuggestPcFileName(sourceFileName));
+
+        // The 1.09 console layout is weirdly different (by 8 bytes), failing as expected
+        [Theory]
+        [InlineData(0x94F4F0, true)]  // PC
+        [InlineData(0x94E8F0, true)]  // PS4 1.02
+        [InlineData(0x94F308, false)] // PS4 1.09
+        [InlineData(0, false)]
+        public void CanEncryptTest(long plainLength, bool expected) =>
+            Assert.Equal(expected, SaveKh3PcCrypto.CanEncrypt(plainLength));
+
+        [Fact]
+        public void ConvertConsoleSaveToPcTest() => File.OpenRead("Saves/kh3.bin").Using(stream =>
+        {
+            var save = SaveKh3.Read(stream);
+            var plain = new MemoryStream();
+            save.Write(plain);
+
+            var encrypted = new MemoryStream();
+            SaveKh3PcCrypto.Encrypt(plain, encrypted, AccountId);
+
+            Assert.True(SaveKh3PcCrypto.IsEncrypted(encrypted));
+            Assert.Equal(plain.ToArray(), SaveKh3PcCrypto.Decrypt(encrypted, AccountId).ToArray());
+        });
 
         [Theory]
         [InlineData("76561197999624471", true)]
@@ -122,8 +154,6 @@ namespace KHSave.Tests
             Assert.Equal(original.ToArray(), reencrypted.ToArray());
         });
 
-        // Regression: the CRC must cover only FileSize bytes after the header. The PC data
-        // block is 8 bytes longer, and hashing them produced a checksum the game rejects.
         [Fact]
         public void WriteWithoutChangesKeepsChecksumAndReencryptsIdentically() => File.OpenRead(Slot0Path).Using(stream =>
         {

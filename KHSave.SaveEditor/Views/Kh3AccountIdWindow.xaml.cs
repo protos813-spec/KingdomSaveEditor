@@ -16,6 +16,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using KHSave.Lib3;
 
@@ -26,14 +28,37 @@ namespace KHSave.SaveEditor.Views
     /// </summary>
     public partial class Kh3AccountIdWindow : Window
     {
+        private const string DecryptDescription =
+            "This save is encrypted with a key derived from the account ID it was saved with. Enter the SteamID64 (17 digits) or Epic Games account ID: it is the name of the folder that contains 'SaveGames\\kh3sv2' under Documents.";
+
+        private const string EncryptDescription =
+            "The save will be encrypted for the account that is going to load it, so enter the SteamID64 (17 digits) or Epic Games account ID of the PC copy of the game: it is the name of the folder that contains 'SaveGames\\kh3sv2' under Documents.";
+
         public Kh3AccountIdWindow()
         {
             InitializeComponent();
             DataContext = this;
-            Loaded += (s, e) => AccountIdTextBox.Focus();
+            AccountIds = SaveKh3PcCrypto.FindLocalAccountIds().ToList();
+            AccountId = AccountIds.FirstOrDefault();
+            Description = DecryptDescription;
+            Loaded += (s, e) => AccountIdComboBox.Focus();
         }
 
         public string AccountId { get; set; }
+
+        /// <summary>Accounts with a local installation, offered as suggestions.</summary>
+        public IList<string> AccountIds { get; }
+
+        public string Description { get; private set; }
+
+        /// <summary>Switches the window from asking how to read a save to asking how to write one.</summary>
+        public void AskForEncryption(string suggestedAccountId)
+        {
+            Title = "Convert to Kingdom Hearts III PC save";
+            Description = EncryptDescription;
+            if (!string.IsNullOrEmpty(suggestedAccountId))
+                AccountId = suggestedAccountId;
+        }
 
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {

@@ -54,7 +54,9 @@ namespace KHSave.Lib3
             "ABCDE!#$%&FGHIJ012345KLMNOPqrstuvwxyzQRSTUVWXYZ6789abcdefgh},.<>ijklmnop()=~|-^+*;:[]{/?_@");
 
         private static readonly Regex AccountIdRegex = new Regex(@"^[0-9A-Za-z_-]+$", RegexOptions.Compiled);
+        private static readonly Regex SlotRegex = new Regex(@"slot(\d+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private const string SaveGamesFolder = "SaveGames";
+        private static readonly string DataFolder = Path.Combine(SaveGamesFolder, "kh3sv2", "data");
         private static readonly char[] PathSeparators = { '\\', '/' };
 
         public static byte[] DeriveKey(string accountId)
@@ -101,18 +103,43 @@ namespace KHSave.Lib3
         }
 
         /// <summary>
+        /// Name a converted save must have to be picked up by the PC release, derived from the
+        /// slot the source save came from.
+        /// </summary>
+        public static string SuggestPcFileName(string sourceFileName)
+        {
+            var name = Path.GetFileName(sourceFileName) ?? string.Empty;
+            if (name.IndexOf("system", StringComparison.OrdinalIgnoreCase) >= 0)
+                return "KHIII_system.bin";
+
+            var slot = SlotRegex.Match(name);
+            return slot.Success ? $"KHIII_slot{slot.Groups[1].Value}.bin" : "KHIII_slot0.bin";
+        }
+
+        /// <summary>
+        /// Folder the PC release reads the saves of an account from, or null when that account has no local installation.  
+        /// </summary>
+        public static string TryGetSaveFolder(string accountId)
+        {
+            if (!IsValidAccountId(accountId))
+                return null;
+
+            foreach (var root in AccountRoots())
+            {
+                var folder = Path.Combine(root, accountId, DataFolder);
+                if (Directory.Exists(folder))
+                    return folder;
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Account IDs of the KH3 installs found in the local Documents folder.
         /// </summary>
         public static IEnumerable<string> FindLocalAccountIds()
         {
-            var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            var roots = new[]
-            {
-                Path.Combine(documents, "My Games", "KINGDOM HEARTS III", "Steam"),
-                Path.Combine(documents, "KINGDOM HEARTS III", "Epic Games Store"),
-            };
-
-            foreach (var root in roots)
+            foreach (var root in AccountRoots())
             {
                 if (!Directory.Exists(root))
                     continue;
@@ -123,6 +150,13 @@ namespace KHSave.Lib3
                         yield return name;
                 }
             }
+        }
+
+        private static IEnumerable<string> AccountRoots()
+        {
+            var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            yield return Path.Combine(documents, "My Games", "KINGDOM HEARTS III", "Steam");
+            yield return Path.Combine(documents, "KINGDOM HEARTS III", "Epic Games Store");
         }
 
         /// <summary>
@@ -193,6 +227,11 @@ namespace KHSave.Lib3
 
             return new MemoryStream(plain);
         }
+
+        /// <summary>
+        /// Container encrypts whole blocks so a save whose length is not a multiple of the block size cannot be turned into one.
+        /// </summary>
+        public static bool CanEncrypt(long plainLength) => plainLength > 0 && plainLength % BlockSize == 0;
 
         /// <summary>
         /// Encrypts a plain KH3 PC save into the container format.

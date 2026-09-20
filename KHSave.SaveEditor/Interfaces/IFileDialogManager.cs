@@ -12,5 +12,7 @@ namespace KHSave.SaveEditor.Interfaces
         void Open(Action<Stream> onSuccess);
         void Save(Action<Stream> onSuccess);
         void SaveAs(Action<Stream> onSuccess);
+
+        void ExportAs(string defaultFileName, string filterName, string extension, Action<Stream> onSuccess);
     }
 }

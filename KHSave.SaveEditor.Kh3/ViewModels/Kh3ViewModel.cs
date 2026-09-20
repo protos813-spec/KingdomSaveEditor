@@ -23,7 +23,7 @@ using KHSave.Lib3;
 
 namespace KHSave.SaveEditor.Kh3.ViewModels
 {
-    public class Kh3ViewModel : BaseNotifyPropertyChanged, IRefreshUi, IOpenStream, IWriteToStream
+    public class Kh3ViewModel : BaseNotifyPropertyChanged, IRefreshUi, IOpenStream, IWriteToStream, IGetSave
     {
         public ISaveKh3 Save { get; private set; }
 
@@ -71,5 +71,7 @@ namespace KHSave.SaveEditor.Kh3.ViewModels
         }
 
         public void WriteToStream(Stream stream) => Save.Write(stream);
+
+        public object GetSave() => Save;
     }
 }

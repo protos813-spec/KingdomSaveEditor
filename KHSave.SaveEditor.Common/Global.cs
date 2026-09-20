@@ -95,6 +95,13 @@ namespace KHSave.SaveEditor.Common
             get => Get(false);
             set => Set(value);
         }
+
+        [UserScopedSetting]
+        public bool BackupOnSave
+        {
+            get => Get(true);
+            set => Set(value);
+        }
     }
 
     public static class Global
@@ -177,6 +184,17 @@ namespace KHSave.SaveEditor.Common
             set
             {
                 Settings.AnonymousReporting = value;
+                Settings.Save();
+            }
+        }
+
+        /// <summary>Keep a timestamped copy of a save file before overwriting it.</summary>
+        public static bool BackupOnSave
+        {
+            get => Settings.BackupOnSave;
+            set
+            {
+                Settings.BackupOnSave = value;
                 Settings.Save();
             }
         }

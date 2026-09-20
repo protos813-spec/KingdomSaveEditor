@@ -15,9 +15,10 @@
             <RowDefinition Height="10"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <TextBlock Grid.Row="0" TextWrapping="Wrap"
-            Text="This save is encrypted with a key derived from the account ID it was saved with. Enter the SteamID64 (17 digits) or Epic Games account ID: it is the name of the folder that contains 'SaveGames\kh3sv2' under Documents."/>
-        <TextBox Grid.Row="2" x:Name="AccountIdTextBox" Text="{Binding AccountId, UpdateSourceTrigger=PropertyChanged}"/>
+        <TextBlock Grid.Row="0" TextWrapping="Wrap" Text="{Binding Description}"/>
+        <ComboBox Grid.Row="2" x:Name="AccountIdComboBox" IsEditable="True"
+                  ItemsSource="{Binding AccountIds}"
+                  Text="{Binding AccountId, UpdateSourceTrigger=PropertyChanged}"/>
         <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button Content="OK" Width="75" Margin="0,0,5,0" IsDefault="True" Click="OkButton_Click"/>
             <Button Content="Cancel" Width="75" IsCancel="True"/>
