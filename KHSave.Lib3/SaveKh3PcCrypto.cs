@@ -55,6 +55,7 @@ namespace KHSave.Lib3
 
         private static readonly Regex AccountIdRegex = new Regex(@"^[0-9A-Za-z_-]+$", RegexOptions.Compiled);
         private const string SaveGamesFolder = "SaveGames";
+        private static readonly char[] PathSeparators = { '\\', '/' };
 
         public static byte[] DeriveKey(string accountId)
         {
@@ -85,20 +86,15 @@ namespace KHSave.Lib3
             if (string.IsNullOrEmpty(path))
                 return null;
 
-            var dir = Path.GetDirectoryName(path);
-            while (!string.IsNullOrEmpty(dir))
+            var parts = path.Split(PathSeparators);
+
+            for (var i = parts.Length - 2; i >= 1; i--)
             {
-                var parent = Path.GetDirectoryName(dir);
-                if (string.IsNullOrEmpty(parent))
-                    break;
+                if (!string.Equals(parts[i], SaveGamesFolder, StringComparison.OrdinalIgnoreCase))
+                    continue;
 
-                if (string.Equals(Path.GetFileName(dir), SaveGamesFolder, StringComparison.OrdinalIgnoreCase))
-                {
-                    var accountId = Path.GetFileName(parent);
-                    return IsValidAccountId(accountId) ? accountId : null;
-                }
-
-                dir = parent;
+                var accountId = parts[i - 1];
+                return IsValidAccountId(accountId) ? accountId : null;
             }
 
             return null;
