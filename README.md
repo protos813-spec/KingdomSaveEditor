@@ -2,17 +2,17 @@
 
 ---
 
-| Supported games                | Console         | Region |
-|--------------------------------| ----------------|--------|
-| Kingdom Hearts I               | PS2/PS3/PS4/PC  | All    |
-| Kingdom Hearts Re: CoM         | PS2/PS4/PC      | All    |
-| Kingdom Hearts II              | PS2/PS3/PS4/PC  | US/EU/FM |
-| Kingdom Hearts: Birth By Sleep | PSP/PS3/PS4/PC  | FM     |
-| Kingdom Hearts: Dream Drop Distance | 3DS/PC     | All    |
-| Kingdom Hearts 0.2             | PS4             | All    |
-| Kingdom Hearts III             | PS4/PC          | All    |
-| Final Fantasy VII Remake       | PS4/PC          | All    |
-| Persona 5, Persona 5 Royal     | PS3/PS4         | US/EU  |
+| Supported games                | Console               | Region |
+|--------------------------------| ----------------------|--------|
+| Kingdom Hearts I               | PS2/PS3/PS4/PC/Switch | All    |
+| Kingdom Hearts Re: CoM         | PS2/PS4/PC/Switch     | All    |
+| Kingdom Hearts II              | PS2/PS3/PS4/PC/Switch | US/EU/FM |
+| Kingdom Hearts: Birth By Sleep | PSP/PS3/PS4/PC/Switch | FM     |
+| Kingdom Hearts: Dream Drop Distance | 3DS/PC           | All    |
+| Kingdom Hearts 0.2             | PS4                   | All    |
+| Kingdom Hearts III             | PS4/PC                | All    |
+| Final Fantasy VII Remake       | PS4/PC                | All    |
+| Persona 5, Persona 5 Royal     | PS3/PS4               | US/EU  |
 
 [![Download](https://img.shields.io/github/downloads/BFlorry/KingdomSaveEditor/total.svg?)](https://github.com/BFlorry/KingdomSaveEditor/releases)
 ![Last commit](https://img.shields.io/github/last-commit/BFlorry/KingdomSaveEditor.svg)
@@ -22,6 +22,17 @@
 
 If reading/editing a console save, you need to decrypt your save before opening it with Kingdom Save Editor. Please refer to [this guide](docs/decryption.md) to know how to decrypt your save. 
 PC versions do not need decrypting and eg. for KH HD1.5+2.5 REMIX Steam version (in Windows) the saves can be found in `C:\Users\{$USERNAME}\Documents\My Games\KINGDOM HEARTS HD 1.5+2.5 ReMIX\Steam\{$ID}\` and the save files are .png files.
+
+### Nintendo Switch (KH HD 1.5+2.5 ReMIX, native version)
+
+Saves from the native Switch version use the same `.png` container as the PC
+version, so no decryption step was needed in testing.
+
+- Tested: KH2 Final Mix. Opening, editing and restoring the save on the Switch
+  worked, and a Steam save loaded on Switch after being renamed.
+- File naming: the Switch file is named `KHIIFM.png`; the Steam file is
+  `KHIIFM_WW.png`. Rename to match what the Switch expects.
+- Always back up the original file before editing and edit a copy.
 
 ## Contribution
 
