@@ -47,6 +47,7 @@ If you want to add missing names, improve it or add new offsets, just clone the 
 
 ## Special thanks
 
+* BFlorry for continuing and maintaining Kingdom Save Editor after the original project was archived
 * xeeynamo for the project and codebase creation and maintaining up until 2022
 * Rikux3 for the incredible support of Kingdom Hearts 1 and Birth By Sleep Final Mix, the PC release of Kingdom Hearts games, the CBS PSU and PSV support
 * Keytotruth for additional coding and offset findings for Kingdom Hearts III
